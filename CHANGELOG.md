@@ -1,3 +1,9 @@
+## [6.2.2](https://github.com/appium/appium-xcode/compare/v6.2.1...v6.2.2) (2026-05-07)
+
+### Miscellaneous Chores
+
+* Use memoize import from support lib ([#175](https://github.com/appium/appium-xcode/issues/175)) ([b9cef87](https://github.com/appium/appium-xcode/commit/b9cef876da32eb55ec3301c9ccfe6f0d459a3fc3))
+
 ## [6.2.1](https://github.com/appium/appium-xcode/compare/v6.2.0...v6.2.1) (2026-04-29)
 
 ### Bug Fixes
