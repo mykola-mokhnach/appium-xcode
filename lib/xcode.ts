@@ -1,9 +1,9 @@
-import {fs, logger} from '@appium/support';
+import {fs, logger, util} from '@appium/support';
 import path from 'node:path';
 import {retry} from 'asyncbox';
 import {exec} from 'teen_process';
 import * as semver from 'semver';
-import {runXcrunCommand, findAppPaths, XCRUN_TIMEOUT, readXcodePlist, memoize} from './helpers';
+import {runXcrunCommand, findAppPaths, XCRUN_TIMEOUT, readXcodePlist} from './helpers';
 import type {XcodeVersion} from './types';
 
 const DEFAULT_NUMBER_OF_RETRIES = 2;
@@ -38,9 +38,12 @@ export async function getPathFromXcodeSelect(timeout: number = XCRUN_TIMEOUT): P
   try {
     ({stdout} = await exec('xcode-select', ['--print-path'], {timeout}));
   } catch (e) {
+    const stderr =
+      e && typeof e === 'object' && 'stderr' in e ? String((e as {stderr: unknown}).stderr) : '';
+    const message = e instanceof Error ? e.message : String(e);
     const msg =
       `Cannot determine the path to Xcode by running 'xcode-select -p' command. ` +
-      `Original error: ${e.stderr || e.message}`;
+      `Original error: ${stderr || message}`;
     throw new Error(msg);
   }
   // trim and remove trailing slash
@@ -90,7 +93,7 @@ export async function getPathFromDeveloperDir(): Promise<string> {
  * @returns Full path to Xcode Developer subfolder timeout
  * @throws {Error} If there was an error while retrieving the path.
  */
-export const getPath = memoize(
+export const getPath = util.memoize(
   (timeout: number = XCRUN_TIMEOUT): Promise<string> =>
     process.env.DEVELOPER_DIR ? getPathFromDeveloperDir() : getPathFromXcodeSelect(timeout),
 );
@@ -188,7 +191,7 @@ export async function getMaxIOSSDKWithoutRetry(timeout: number = XCRUN_TIMEOUT):
  * @returns The SDK version
  * @throws {Error} If the SDK version number cannot be determined
  */
-export const getMaxIOSSDK = memoize(function getMaxIOSSDK(
+export const getMaxIOSSDK = util.memoize(function getMaxIOSSDK(
   retries: number = DEFAULT_NUMBER_OF_RETRIES,
   timeout: number = XCRUN_TIMEOUT,
 ) {
@@ -220,7 +223,7 @@ export async function getMaxTVOSSDKWithoutRetry(timeout: number = XCRUN_TIMEOUT)
  * @returns The SDK version
  * @throws {Error} If the SDK version number cannot be determined
  */
-export const getMaxTVOSSDK = memoize(async function getMaxTVOSSDK(
+export const getMaxTVOSSDK = util.memoize(async function getMaxTVOSSDK(
   retries: number = DEFAULT_NUMBER_OF_RETRIES,
   timeout: number = XCRUN_TIMEOUT,
 ): Promise<string> {
@@ -253,7 +256,7 @@ async function getVersionWithoutRetry(
  * @returns Xcode version
  * @throws {Error} If there was a failure while retrieving the version
  */
-const getVersionMemoized = memoize(function getVersionMemoized(
+const getVersionMemoized = util.memoize(function getVersionMemoized(
   retries: number = DEFAULT_NUMBER_OF_RETRIES,
   timeout: number = XCRUN_TIMEOUT,
 ): Promise<semver.SemVer | null> {

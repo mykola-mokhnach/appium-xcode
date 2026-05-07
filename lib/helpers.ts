@@ -5,41 +5,6 @@ import path from 'node:path';
 
 export const XCRUN_TIMEOUT = 15000;
 
-type AnyFunction = (this: any, ...args: any[]) => any;
-
-/**
- * Memoizes function calls by traversing a nested argument-keyed map.
- *
- * @param fn The function to memoize
- * @returns A memoized wrapper around the input function
- */
-export function memoize<F extends AnyFunction>(fn: F): F {
-  const rootCache = new Map<any, any>();
-  const RESULT = Symbol('memoize.result');
-
-  function memoized(this: ThisParameterType<F>, ...args: Parameters<F>): ReturnType<F> {
-    let currentCache = rootCache;
-
-    for (const arg of args) {
-      if (!currentCache.has(arg)) {
-        currentCache.set(arg, new Map());
-      }
-      currentCache = currentCache.get(arg);
-    }
-
-    if (currentCache.has(RESULT)) {
-      return currentCache.get(RESULT);
-    }
-
-    const result = fn.apply(this, args);
-    currentCache.set(RESULT, result);
-
-    return result;
-  }
-
-  return memoized as F;
-}
-
 /**
  * Executes 'xcrun' command line utility
  *
@@ -55,12 +20,18 @@ export async function runXcrunCommand(
   try {
     return await exec('xcrun', args, {timeout});
   } catch (err) {
-    // the true error can be hidden within the stderr
-    if (err.stderr) {
-      err.message = `${err.message}: ${err.stderr}`;
+    if (err instanceof Error) {
+      // the true error can be hidden within the stderr
+      const stderr =
+        err && typeof err === 'object' && 'stderr' in err
+          ? String((err as {stderr: unknown}).stderr)
+          : '';
+      if (stderr) {
+        err.message = `${err.message}: ${stderr}`;
+      }
+      throw err;
     }
-
-    throw err;
+    throw new Error(String(err), {cause: err});
   }
 }
 
